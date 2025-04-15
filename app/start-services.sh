@@ -1,6 +1,6 @@
 #!/bin/bash
 # This will run only by the master node
-
+echo "Starting services, start-services.sh is running"
 # starting HDFS daemons
 $HADOOP_HOME/sbin/start-dfs.sh
 
@@ -41,3 +41,4 @@ jps -lm
 # Create a directory for root user on HDFS
 hdfs dfs -mkdir -p /user/root
 
+echo "Services are started, start-services.sh is done"

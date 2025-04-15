@@ -66,18 +66,17 @@ for line in sys.stdin:
 
 avg_length = sum(doc_lengths.values()) / len(doc_lengths) if doc_lengths else 0
 
-# Outputs remain the same...
 
 # Output format:
 # [table_type]\t[data_fields]
 
 # 1. Output term_index data (term, doc_id, tf)
 for (term, doc_id), tf in tf.items():
-    print(f"term_index\t{term}\t{doc_id}\t{tf}")
+    print(f"tf\t{term}\t{doc_id}\t{tf}")
 
 # 2. Output term_df data (term, document frequency)
 for term, docs in df.items():
-    print(f"term_df\t{term}\t{len(docs)}")
+    print(f"df\t{term}\t{len(docs)}")
 
 # 3. Output doc_stats data (doc_id, length)
 for doc_id, length in doc_lengths.items():

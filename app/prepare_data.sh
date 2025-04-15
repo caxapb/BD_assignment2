@@ -8,14 +8,18 @@ PARQUET_FILE="/app/data/test.parquet"
 export PYSPARK_DRIVER_PYTHON=$(which python) 
 unset PYSPARK_PYTHON
 
-echo "putting data to hdfs..."
-hdfs dfs -put -f "$PARQUET_FILE" / && \
-    spark-submit /app/prepare_data.py && \
-    echo "Putting data to hdfs" && \
-    hdfs dfs -mkdir /data/ && /
-    hdfs dfs -put /app/data/*.txt /data/ && \
-    hdfs dfs -ls /data && \
-    echo "done data preparation!" && \
-    echo "Starting RDD!" && \
-    spark-submit /app/prepare_data_v2.py && \
-    hdfs dfs -ls /index/data
+echo "load parquet file"
+hdfs dfs -put -f "$PARQUET_FILE" / 
+
+echo "prepare_data.py is runnings"
+spark-submit /app/prepare_data.py
+
+echo "Putting data to hdfs"
+hdfs dfs -mkdir /data/
+hdfs dfs -put /app/data/*.txt /data/
+hdfs dfs -ls /data
+echo "done data preparation!"
+
+echo "Starting RDD!"
+spark-submit /app/prepare_data_v2.py
+hdfs dfs -ls /index/data

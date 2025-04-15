@@ -1,0 +1,1 @@
+spark-submit /app/query.py 'some query'

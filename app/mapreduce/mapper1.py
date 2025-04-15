@@ -1,8 +1,12 @@
 import sys
+import re
 
 for line in sys.stdin:
     doc_id, title, content = line.strip().split('\t')
-    terms = content.lower().split()
+
+    terms = content.lower()
+    terms = re.findall(r'\b\w+\b', terms)
+
     doc_length = len(terms)
     
     # Emit term frequencies

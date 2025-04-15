@@ -18,11 +18,9 @@ venv-pack -o .venv.tar.gz
 # Collect data
 bash prepare_data.sh
 
-
 # # Run the indexer
 bash index.sh
 
 # # Run the ranker
 # bash search.sh "this is a query!"
-
 tail -f /dev/null

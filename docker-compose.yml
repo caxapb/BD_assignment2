@@ -20,6 +20,12 @@ services:
     working_dir: /app
     # You can comment the entrypoint to run the script manually inside the container
     entrypoint: 
+      # - bash
+      # - -c
+      # - |
+      #   apt-get update && apt-get install -y dos2unix && \
+      #   find /app -type f -exec dos2unix {} \; && \
+      #   bash /app/app.sh
       - bash
       - /app/app.sh
     
@@ -46,6 +52,14 @@ services:
       - "7000:7000"
     networks:
       - spark-cluster
+    environment:
+      - MAX_HEAP_SIZE=1G
+      - HEAP_NEWSIZE=256M
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
     
 
 networks:
