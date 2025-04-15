@@ -60,7 +60,7 @@ for line in sys.stdin:
         tf[(term, doc_id)] += 1
         
     
-    elif parts[0] == "LEN":
+    elif parts[0] == "DOC":
         doc_id, length = parts[1], int(parts[2])
         doc_lengths[doc_id] = length
 

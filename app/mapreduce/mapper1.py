@@ -14,4 +14,4 @@ for line in sys.stdin:
         print(f"TF\t{term}\t{doc_id}")
     
     # Emit document length
-    print(f"LEN\t{doc_id}\t{doc_length}")
+    print(f"DOC\t{doc_id}\t{doc_length}")

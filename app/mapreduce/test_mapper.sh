@@ -1,1 +1,0 @@
-printf "175 \t MapReduce \t hello map reduce world map \n 176 \t MapMap \t reduce hadoop engine" | python3 /app/mapreduce/mapper1.py

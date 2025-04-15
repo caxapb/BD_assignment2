@@ -13,12 +13,12 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 
-df = spark.read.parquet("/test.parquet")
+df = spark.read.parquet("/a.parquet")
 
-# n = 1100
-# df = df.select(['id', 'title', 'text']).sample(fraction=100 * n / df.count(), seed=0).limit(n)
+n = 1100
+df = df.select(['id', 'title', 'text']).sample(fraction=100 * n / df.count(), seed=0).limit(n)
 
-df = df.select(['id', 'title', 'text'])
+# df = df.select(['id', 'title', 'text'])
 
 
 def create_doc(row):
