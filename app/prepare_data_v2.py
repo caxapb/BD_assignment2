@@ -12,7 +12,7 @@ spark = SparkSession.builder \
 sc = spark.sparkContext
 
 path = "/data"
-rdd3 = sc.wholeTextFiles(path)
+rdd = sc.wholeTextFiles(path)
 
 def parse_file(pair):
     filename, content = pair
@@ -25,7 +25,7 @@ def parse_file(pair):
     title = title_part.replace('_', ' ')
     return f"{doc_id}\t{title}\t{content}"
 
-parsed_rdd = rdd3.map(parse_file)
+parsed_rdd = rdd.map(parse_file)
 
 parsed_rdd.collect()
 

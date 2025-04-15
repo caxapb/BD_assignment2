@@ -127,10 +127,15 @@
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
-from cassandra.cluster import Cluster
+# from cassandra.cluster import Cluster
 
 import sys
 import math
+import re
+
+def tokenize(qr):
+    return re.findall(r'\b\w+\b', qr)
+
 
 # Constants for BM25
 K1 = 1
@@ -138,7 +143,7 @@ B = 0.75
 
 def calculate_idf(df, total_docs):
     """Calculate IDF using the formula."""
-    return math.log((total_docs - df + 0.5) / (df + 0.5) + 1)
+    return math.log((total_docs) / (df) + 0.001)
 
 def calculate_bm25(tf, idf, doc_length, avgdl):
     """Calculate BM25 score for a single term in a document."""
@@ -146,71 +151,103 @@ def calculate_bm25(tf, idf, doc_length, avgdl):
     denominator = tf + K1 * (1 - B + B * (doc_length / avgdl))
     return idf * (numerator / denominator)
 
+def compute_bm25_scores(joined_data):
+    doc_id, (term_freqs, doc_length) = joined_data
+    try:
+        score = sum(
+            calculate_bm25(term_freqs[term], idf_map[term], doc_length, avg_length)
+            for term in query_terms)
+        print('!'*100, 'SCORE')
+        print(score)
+        return (doc_id, float(score))
+    except Exception as e:
+        print(f"Error calculating BM25 for doc {doc_id}: {str(e)}")
+        return (doc_id, 0.0)
+
 def main():
     spark = SparkSession.builder \
-        .appName("BM25 Search") \
+        .appName("TFIDF search") \
         .config("spark.cassandra.connection.host", "cassandra-server") \
+        .config("spark.jars.packages", "com.datastax.spark:spark-cassandra-connector_2.12:3.4.0") \
         .getOrCreate()
 
 
-    query = sys.argv[1].lower().split()
-
+    query = tokenize(sys.argv[1].lower())
+    
     # Load global statistics from Cassandra
     stats_df = spark.read.format("org.apache.spark.sql.cassandra") \
         .options(table="stats", keyspace="search_engine").load()
     
-    total_docs = stats_df.filter(col("key") == "docs_total").select("value").collect()[0]["value"]
-
-    avgdl = stats_df.filter(col("key") == "avg_length").select("value").collect()[0]["value"]
-
-    print('!'*100)
-    print(total_docs, avgdl)
-    # Load terms (vocabulary) from Cassandra
+    stats = {row['key']: row['value'] for row in stats_df.collect()}
+    N = stats.get('docs_total', 0)
+    avg_length = stats.get('avg_length', 0.0)
+    
+    # term - df - how many docs contain term
     terms_df = spark.read.format("org.apache.spark.sql.cassandra") \
-        .options(table="terms", keyspace="search_engine").load()
+        .options(table="terms", keyspace="search_engine") \
+        .load()
+    
+    # term - doc-id - tf - how many times term is met in doc_id
+    term_frequencies_df = spark.read.format("org.apache.spark.sql.cassandra") \
+        .options(table="term_frequencies", keyspace="search_engine") \
+        .load()
+    
+    # dic-id - length
+    documents_df = spark.read.format("org.apache.spark.sql.cassandra") \
+        .options(table="documents", keyspace="search_engine") \
+        .load()
+    
+    print('!'*100)
+    print(N, avg_length)
+    
+    # # Load terms (vocabulary) from Cassandra
     
     terms_rdd = terms_df.rdd.map(lambda row: (row["term"], row["df"]))
-
+    print('!'*100)
+    print('terms_rdd')
+    print(terms_rdd.take(5))
     # Calculate IDF for query terms
     query_terms = set(query)
     idf_map = terms_rdd.filter(lambda x: x[0] in query_terms) \
-        .mapValues(lambda df: calculate_idf(df, total_docs)).collectAsMap()
+        .mapValues(lambda df: calculate_idf(df, N)).collectAsMap()
+    print('!'*100)
+    print('idf')
+    print(idf_map)
 
-    # Load term frequencies and document metadata
-    term_frequencies_df = spark.read.format("org.apache.spark.sql.cassandra") \
-        .options(table="term_frequencies", keyspace="search_engine").load()
-    documents_df = spark.read.format("org.apache.spark.sql.cassandra") \
-        .options(table="documents", keyspace="search_engine").load()
 
     # Filter term frequencies for query terms
     term_frequencies_rdd = term_frequencies_df.rdd \
         .filter(lambda row: row["term"] in query_terms) \
-        .map(lambda row: ((row["doc_id"], row["term"]), row["tf"])) \
-        .groupByKey() \
-        .mapValues(dict)
-
+        .map(lambda row: (row["doc_id"], {row["term"]: row["tf"]}))
+    print('!'*100)
+    print('term freq rdd')
+    print(term_frequencies_rdd.take(5))
     # Join with document metadata
     documents_rdd = documents_df.rdd.map(lambda row: (row["doc_id"], row["length"]))
+    print('!'*100)
+    print('doc rdd')
+    print(documents_rdd.take(5))
 
-    # Compute BM25 scores
-    bm25_scores = term_frequencies_rdd.join(documents_rdd).flatMap(
-        lambda x: [
-            (
-                x[0],  # doc_id
-                sum(
-                    calculate_bm25(x[1][0][term], idf_map[term], x[1][1], avgdl)
-                    for term in query_terms if term in x[1][0]
-                )
-            )
-        ]
-    )
+    print('!'*100)
+    print('ALL RDD ARE COLLECTED')
+
+    bm25_scores = term_frequencies_rdd.join(documents_rdd).map(compute_bm25_scores)
+    print('!'*100)
+    print('BM SCORES ARE COMPUTED')
+    print(bm25_scores.take(5))
+    print('!'*100)
+    print('UPPER STRING IS BM25')
+
 
     # Collect top 10 results
     top_10 = bm25_scores.takeOrdered(10, key=lambda x: -x[1])
-
+    
     # Retrieve document titles
     doc_titles = documents_df.filter(col("doc_id").isin([doc_id for doc_id, _ in top_10])) \
         .rdd.map(lambda row: (row["doc_id"], row["title"])).collectAsMap()
+
+    print('!'*100)
+    print('PRINTING')
 
     # Print results
     for doc_id, score in top_10:
