@@ -1,7 +1,4 @@
 from cassandra.cluster import Cluster
-from cassandra.query import BatchStatement
-from cassandra import ConsistencyLevel
-import sys
 import subprocess
 
 
@@ -30,7 +27,8 @@ def create_keyspace(session):
     session.execute("""
         CREATE TABLE IF NOT EXISTS search_engine.documents (
             doc_id int PRIMARY KEY,
-            length int
+            length int,
+            title text
         );
     """)
 
@@ -65,10 +63,10 @@ def insert_data(session):
                 (term, docs)
             )
         elif line[0] == 'doc_stats':
-            doc_id, length = int(line[1]), int(line[2])
+            doc_id, length, title = int(line[1]), int(line[2]), line[3]
             session.execute(
-                "INSERT INTO search_engine.documents (doc_id, length) VALUES (%s, %s)",
-                (doc_id, length)
+                "INSERT INTO search_engine.documents (doc_id, length, title) VALUES (%s, %s, %s)",
+                (doc_id, length, title)
             ) 
         elif line[0] == 'global_stats':
             metric, value = line[1], float(line[2])

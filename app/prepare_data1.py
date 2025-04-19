@@ -1,11 +1,10 @@
 from pathvalidate import sanitize_filename
 from tqdm import tqdm
 from pyspark.sql import SparkSession
-import os
 
 
 spark = SparkSession.builder \
-    .appName('data preparation') \
+    .appName('Data preparation') \
     .master("local") \
     .config("spark.executor.memory", "4g") \
     .config("spark.driver.memory", "4g") \

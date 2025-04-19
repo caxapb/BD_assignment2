@@ -23,4 +23,7 @@ bash index.sh
 
 # # Run the ranker
 bash search.sh "my query"
+# run to test the correctness (I extractes these words from 1 particular file "A Different Pond"):
+bash search.sh "asian family page memior kirkus krueger bao phi"
+bash search.sh "Tim Chamberlain, a doctoral candidate at Birkbeck, University of London wrote in his review for the London School"
 tail -f /dev/null

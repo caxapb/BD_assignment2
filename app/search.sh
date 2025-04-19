@@ -2,8 +2,9 @@
 
 echo "Starting Searching"
 
+# chack if any parameter (query) was passed. If not - exit with code 1
 if [ -z "$1" ]; then
-    echo "Usage: ./search.sh 'your query here'"
+    echo "You need to type the query!!!"
     exit 1
 fi
 
@@ -17,3 +18,4 @@ spark-submit \
   --conf spark.cassandra.connection.port=9042 \
   --conf spark.sql.catalogImplementation=in-memory \
   query.py "$QUERY"
+  
