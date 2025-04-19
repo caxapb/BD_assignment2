@@ -5,7 +5,7 @@
 - Docker
 - Docker compose
 
-## Step 2: Install prerequisites
+## Step 2: Check the app/data/ folder
 - Make sure your a.parquet file is in app/data/ folder
 
 ## Step 3: Run the command
